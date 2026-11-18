@@ -1,0 +1,15 @@
+# Repo-root ignores.
+# The Unity project has its own canonical .gitignore in YardPlayback/.gitignore.
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+
+# WebGL build output (regenerated; force-add if you decide to ship it in the repo)
+/[Bb]uild/
+/[Bb]uilds/
+
+# Logs
+*.log
