@@ -89,9 +89,10 @@ reference; it's optional in the final zip.
   models. The lab package (§4) is the one allowed exception.
 - **Target: WebGL.** Keep everything WebGL-shippable (no realtime GI, lightmap
   budget, single realtime shadow light — see constraints below).
-- **Unity MCP** is connected — use it to inspect/edit the scene, scripts, and
-  assets, run tests, and control play mode. Prefer reading editor state via
-  resources before mutating via tools.
+- **Drive Unity with the Unity CLI — NOT Unity MCP** (owner's standing rule). Use
+  the `unity:unity-cli` skill: run the Editor in batch mode (`-batchmode -quit
+  -projectPath YardPlayback -executeMethod ...`) for imports, tests, light bakes,
+  and builds. Do not call the Unity MCP tools, even if the bridge is connected.
 - **Blender MCP** is connected but not expected to be needed (primitives only).
 - `Assets/Editor/HubForceResolve.cs` is a one-shot package-resolve helper that
   deletes itself; leave it alone.
