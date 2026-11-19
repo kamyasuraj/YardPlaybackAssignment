@@ -16,6 +16,10 @@ Read this first. Then read the authoritative brief before touching anything.
 > every deliverable, every role is in service of meeting the assignment's stated
 > instructions and the **Checked** / **Send back** criteria. This rule overrides
 > any conflicting preference below.
+>
+> **Cross-check every owner request.** Before acting on anything the owner suggests
+> or asks, check it against the brief and say the verdict first: *compliant* (cite
+> the line), or *conflicts* (cite the line and offer the compliant alternative).
 
 ---
 
@@ -94,8 +98,6 @@ reference; it's optional in the final zip.
   -projectPath YardPlayback -executeMethod ...`) for imports, tests, light bakes,
   and builds. Do not call the Unity MCP tools, even if the bridge is connected.
 - **Blender MCP** is connected but not expected to be needed (primitives only).
-- `Assets/Editor/HubForceResolve.cs` is a one-shot package-resolve helper that
-  deletes itself; leave it alone.
 
 ---
 

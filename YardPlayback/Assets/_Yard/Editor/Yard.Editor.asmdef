@@ -1,0 +1,20 @@
+{
+    "name": "Yard.Editor",
+    "rootNamespace": "Yard.EditorTools",
+    "references": [
+        "Yard.Core",
+        "Yard.Runtime",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

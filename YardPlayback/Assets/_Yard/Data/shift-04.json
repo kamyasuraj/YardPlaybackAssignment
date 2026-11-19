@@ -1,0 +1,22 @@
+{
+  "ticket": "shift-04",
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 3 },
+    { "id": "fork-2", "lane": "south", "load": 0 },
+    { "id": "crate-a", "lane": "north", "load": 1 }
+  ],
+  "cues": [
+    { "say": "clock", "minute": 1, "patch": {} },
+    { "say": "carry", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 6 }] } },
+    { "say": "slip", "who": "fork-2", "patch": {} },
+    { "say": "mark", "who": "fork-1", "flag": "late", "patch": {} },
+    { "say": "clock", "minute": 2, "patch": {} },
+    { "say": "tick", "who": "fork-1", "flag": "late", "amount": 2, "patch": { "set": [{ "id": "fork-1", "load": 5 }] } },
+    { "say": "setdown", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 2 }], "gone": ["crate-a"] } },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 2 },
+    { "id": "fork-2", "lane": "south", "load": 0 }
+  ]
+}

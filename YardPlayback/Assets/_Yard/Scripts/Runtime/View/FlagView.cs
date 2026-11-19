@@ -1,0 +1,34 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace Yard
+{
+    /// <summary>A flag pinned on a marked marker: a pole, a cloth that is raised, and the flag's name.</summary>
+    [DisallowMultipleComponent]
+    public class FlagView : MonoBehaviour
+    {
+        [SerializeField] Transform cloth;
+        [SerializeField] Transform label;
+        [SerializeField] Text labelText;
+        [Tooltip("Cloth local Y at the bottom of the pole.")]
+        [SerializeField] float loweredY = 0.25f;
+        [Tooltip("Cloth local Y at the top of the pole.")]
+        [SerializeField] float raisedY = 0.92f;
+        [Tooltip("How far the name sits above the cloth.")]
+        [SerializeField] float labelAbove = 0.32f;
+
+        public void SetName(string flagName) => labelText.text = string.IsNullOrEmpty(flagName) ? "flag" : flagName;
+
+        /// <summary>0 = cloth at the bottom of the pole, 1 = at the top. The name rides with it.</summary>
+        public void SetRaise(float p)
+        {
+            float y = Mathf.Lerp(loweredY, raisedY, p);
+            var c = cloth.localPosition;
+            c.y = y;
+            cloth.localPosition = c;
+            var l = label.localPosition;
+            l.y = y + labelAbove;
+            label.localPosition = l;
+        }
+    }
+}

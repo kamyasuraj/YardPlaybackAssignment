@@ -1,0 +1,5 @@
+<!-- Cue handlers are found by reflection, so keep the yard assemblies whole when a WebGL build strips code. -->
+<linker>
+  <assembly fullname="Yard.Core" preserve="all" />
+  <assembly fullname="Yard.Runtime" preserve="all" />
+</linker>
