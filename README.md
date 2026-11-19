@@ -147,9 +147,9 @@ The brief's **Send back** list, item by item.
 | Repo, with the Unity version and the steps to press Play | this README: [Unity version](#unity-version), [How to run it](#how-to-run-it) | done |
 | `index.html` as described | [`index.html`](index.html), contract in [Driving it from a web page](#driving-it-from-a-web-page) | done |
 | WebGL build wired to the page (optional) | [`Build/`](Build/), live on [GitHub Pages](https://kamyasuraj.github.io/YardPlaybackAssignment/) | done |
-| 2-minute recording, sound off: play from the start, pause mid-carry, resume, 2×, then Skip | `Docs/yard/recording-2min.mp4` | to do |
-| Three lines on a bug still in it | [Known bug](#known-bug) below | to do |
-| Three lines on another day, and whether it goes to the picture or the page | [Another day](#another-day) below | to do |
+| Recording (2 minutes at most), sound off: play from the start, pause mid-carry, resume, 2×, then Skip | [`Docs/yard/recording.mp4`](Docs/yard/recording.mp4): 24 s, 1080p, no audio track. Recorded with Unity Recorder (an Editor-only package) clicking the in-scene buttons: Play 2.5 s, Pause mid-carry 5.4 s, Resume 9.4 s, 2× 15.4 s, Skip during setdown 19.1 s, then the end on `closing` | done |
+| Three lines on a bug still in it | [Known bug](#known-bug) below | done |
+| Three lines on another day, and whether it goes to the picture or the page | [Another day](#another-day) below | done |
 
 ### Lab lighting (section 4)
 
@@ -163,8 +163,16 @@ The brief's **Send back** list, item by item.
 
 ### Known bug
 
-_To be written._
+1. If a script's `closing` disagrees with what its cues produce, the yard plays `shift_over` (freeze
+   and "SHIFT OVER") and only then animates to `closing`, so it moves after it says it has frozen.
+2. The brief's shift-04 never hits this, because its cues already end on `closing`.
+   `Tests/Scenarios/09_closing_disagrees.json` reproduces it.
+3. Fix: settle the closing correction before a final `shift_over`, so the freeze is the last thing seen.
 
 ### Another day
 
-_To be written._
+1. Another day would go to the **picture**.
+2. A director camera that frames each cue's marker, not just the setdown push-in, and labels that
+   stay readable at small window sizes.
+3. Richer primitive set-pieces: a visible mast lift on carry, the crate tipping off the forks on
+   setdown, and a minute clock that ticks rather than rolls.
