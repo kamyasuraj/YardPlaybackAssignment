@@ -149,8 +149,11 @@ namespace Yard.Core
 
             if (!Yard.Matches(Script.closing))
             {
-                Warn("The end state differs from 'closing'; snapping to 'closing' (the file wins).");
+                // The file wins: the end is held to `closing`, shown with motion rather than a pop.
+                Warn("The end state differs from 'closing'; moving to 'closing' (the file wins).");
+                yield return Wait(BeatSeconds);
                 Yard.EnforceClosing(Script.closing);
+                yield return animator.AnimateClosing(Yard);
                 animator.SyncInstant(Yard);
             }
             Finish();

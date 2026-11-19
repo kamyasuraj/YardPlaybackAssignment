@@ -5,7 +5,7 @@ using Yard.Core;
 namespace Yard.Cues
 {
     /// <summary>shift_over: the yard freezes. The screen dims and "SHIFT OVER" shows; nothing moves after this.</summary>
-    [CueType("shift_over"), Preserve]
+    [CueType("shift_over"), CueLook("#E8E8EC", "SHIFT OVER"), Preserve]
     public class ShiftOverCue : ICueHandler
     {
         public IEnumerator Play(CueContext ctx, Cue cue)

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using Yard.Core;
+using Yard.Cues;
 
 namespace Yard
 {
@@ -17,6 +18,7 @@ namespace Yard
         public static readonly Color MutedColor = new Color(1f, 1f, 1f, 0.6f);
         public static readonly Color ErrorColor = new Color(1f, 0.45f, 0.4f, 1f);
         static readonly Color FreezeColor = new Color(0.02f, 0.03f, 0.05f, 0.45f);
+        const float CueFadeSeconds = 0.15f;
 
         [SerializeField] Text minute;
         [SerializeField] Text ticket;
@@ -31,18 +33,60 @@ namespace Yard
         [SerializeField] Button speed2;
         [SerializeField] Button skip;
 
+        string cueTarget;
+        bool cueSwapping;
+        float cueAlpha = 1f;
+
         public bool IsSetUp => minute != null && ticket != null && cueLine != null && status != null
             && error != null && freezeTitle != null && freeze != null
             && play != null && pause != null && speed1 != null && speed2 != null && skip != null;
 
+        public string MinuteText => minute.text;
+
+        // Script text (the ticket, ids in the cue line, a rejected Load's message) shows exactly as written.
+        void Awake()
+        {
+            foreach (var text in new[] { minute, ticket, cueLine, status, error, freezeTitle })
+                if (text != null) text.supportRichText = false;
+        }
+
         public void ResetFor(YardScript script)
         {
             minute.text = "–";
+            ResetMinuteLook();
             ticket.text = "TICKET  " + script.ticket;
-            cueLine.text = $"cue 0/{script.cues.Length}  ·  ready";
-            PulseMinute(0f);
+            SetCueInstant($"cue 0/{script.cues.Length}  ·  ready");
             SetFreeze(0f);
             ShowError(null);
+        }
+
+        /// <summary>Advances the cue-line crossfade by <paramref name="dt"/> seconds of playback time.</summary>
+        public void Tick(float dt)
+        {
+            if (cueSwapping)
+            {
+                cueAlpha = Mathf.MoveTowards(cueAlpha, 0f, dt / CueFadeSeconds);
+                if (cueAlpha <= 0f)
+                {
+                    cueLine.text = cueTarget;
+                    cueSwapping = false;
+                }
+            }
+            else if (cueAlpha < 1f)
+            {
+                cueAlpha = Mathf.MoveTowards(cueAlpha, 1f, dt / CueFadeSeconds);
+            }
+            ApplyCueAlpha();
+        }
+
+        /// <summary>Ends any fade at once (Skip cuts).</summary>
+        public void Halt()
+        {
+            if (cueSwapping) cueLine.text = cueTarget;
+            cueSwapping = false;
+            cueAlpha = 1f;
+            ApplyCueAlpha();
+            ResetMinuteLook();
         }
 
         public void SetState(PlaybackState state, float speed)
@@ -56,15 +100,56 @@ namespace Yard
             Style(skip, loaded, false);
         }
 
-        public void SetCue(int index, int count, string description) =>
-            cueLine.text = $"cue {index + 1}/{count}  ·  {description}";
-
-        public void SetMinute(int value) => minute.text = value.ToString();
-
-        public void PulseMinute(float k)
+        /// <summary>Crossfades the cue line to the new cue: the old text fades out, the new one fades in.</summary>
+        public void SetCue(int index, int count, string description)
         {
-            minute.rectTransform.localScale = Vector3.one * (1f + 0.3f * k);
-            minute.color = Color.Lerp(Color.white, AccentColor, k);
+            string text = $"cue {index + 1}/{count}  ·  {description}";
+            if (text == cueLine.text && !cueSwapping) return;
+            cueTarget = text;
+            cueSwapping = true;
+        }
+
+        /// <summary>Sets the cue line at once (on Load and when Skip lands on the end).</summary>
+        public void SetCueInstant(string text)
+        {
+            cueTarget = text;
+            cueLine.text = text;
+            cueSwapping = false;
+            cueAlpha = 1f;
+            ApplyCueAlpha();
+        }
+
+        public void SetCueInstant(int index, int count, string description) =>
+            SetCueInstant($"cue {index + 1}/{count}  ·  {description}");
+
+        public void SetMinute(int value)
+        {
+            minute.text = value.ToString();
+            ResetMinuteLook();
+        }
+
+        /// <summary>Rolls the minute from <paramref name="from"/> to <paramref name="to"/>: fade out, swap unseen, fade in with a bump.</summary>
+        public void SetMinuteRoll(string from, string to, float p)
+        {
+            minute.text = p < 0.5f ? from : to;
+            float bump = Easing.Pulse(p);
+            var color = Color.Lerp(Color.white, AccentColor, bump);
+            color.a = Easing.InOut(Mathf.Abs(1f - 2f * p));
+            minute.color = color;
+            minute.rectTransform.localScale = Vector3.one * (1f + 0.25f * bump);
+        }
+
+        void ResetMinuteLook()
+        {
+            minute.color = Color.white;
+            minute.rectTransform.localScale = Vector3.one;
+        }
+
+        void ApplyCueAlpha()
+        {
+            var color = cueLine.color;
+            color.a = Easing.InOut(cueAlpha);
+            cueLine.color = color;
         }
 
         /// <summary>0 = live yard, 1 = frozen: dimmed, with "SHIFT OVER" showing.</summary>

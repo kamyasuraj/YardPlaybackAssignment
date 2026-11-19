@@ -1,0 +1,39 @@
+{
+  "ticket": "scenario-03",
+  "expect": {
+    "about": "Both lanes work: the south forklift carries, gets marked and ticked, sets down; then the north one does the same; every cue type appears.",
+    "loads": [
+      { "cue": 2, "id": "fork-2", "load": 7 },
+      { "cue": 3, "id": "fork-1", "load": 1 },
+      { "cue": 5, "id": "fork-2", "load": 4 },
+      { "cue": 6, "id": "fork-2", "load": 2 },
+      { "cue": 7, "id": "fork-1", "load": 5 },
+      { "cue": 8, "id": "fork-1", "load": 1 }
+    ],
+    "gone": [ { "cue": 6, "id": "crate-b" }, { "cue": 8, "id": "crate-a" } ],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 1 },
+    { "id": "crate-a", "lane": "north", "load": 4 },
+    { "id": "fork-2", "lane": "south", "load": 2 },
+    { "id": "crate-b", "lane": "south", "load": 5 }
+  ],
+  "cues": [
+    { "say": "clock", "minute": 1, "patch": {} },
+    { "say": "carry", "who": "fork-2", "what": "crate-b", "patch": { "set": [{ "id": "fork-2", "load": 7 }] } },
+    { "say": "slip", "who": "fork-1", "patch": {} },
+    { "say": "mark", "who": "fork-2", "flag": "heavy", "patch": {} },
+    { "say": "tick", "who": "fork-2", "flag": "heavy", "amount": 3, "patch": { "set": [{ "id": "fork-2", "load": 4 }] } },
+    { "say": "setdown", "who": "fork-2", "what": "crate-b", "patch": { "set": [{ "id": "fork-2", "load": 2 }], "gone": ["crate-b"] } },
+    { "say": "carry", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 5 }] } },
+    { "say": "setdown", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 1 }], "gone": ["crate-a"] } },
+    { "say": "clock", "minute": 2, "patch": {} },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 1 },
+    { "id": "fork-2", "lane": "south", "load": 2 }
+  ]
+}

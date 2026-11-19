@@ -6,12 +6,13 @@ using UnityEngine;
 namespace Yard.Cues
 {
     /// <summary>
-    /// Maps each cue's <c>say</c> to its handler. Built once by finding every <see cref="ICueHandler"/>
-    /// marked <see cref="CueTypeAttribute"/>, so adding a cue type never edits the player.
+    /// Maps each cue's <c>say</c> to its handler and its look. Built once by finding every
+    /// <see cref="ICueHandler"/> marked <see cref="CueTypeAttribute"/>, so adding a cue type never edits the player.
     /// </summary>
     public class CueRegistry
     {
         readonly Dictionary<string, ICueHandler> handlers = new Dictionary<string, ICueHandler>();
+        readonly Dictionary<string, CueLook> looks = new Dictionary<string, CueLook>();
 
         public IEnumerable<string> CueTypes => handlers.Keys;
 
@@ -27,15 +28,16 @@ namespace Yard.Cues
                 foreach (var type in TypesOf(assembly))
                 {
                     if (type == null || type.IsAbstract || !typeof(ICueHandler).IsAssignableFrom(type)) continue;
-                    var attribute = type.GetCustomAttribute<CueTypeAttribute>();
-                    if (attribute == null) continue;
-                    registry.Register(attribute.Say, (ICueHandler)Activator.CreateInstance(type));
+                    var cueType = type.GetCustomAttribute<CueTypeAttribute>();
+                    if (cueType == null) continue;
+                    var look = LookFrom(type.GetCustomAttribute<CueLookAttribute>(), cueType.Say);
+                    registry.Register(cueType.Say, (ICueHandler)Activator.CreateInstance(type), look);
                 }
             }
             return registry;
         }
 
-        public void Register(string say, ICueHandler handler)
+        public void Register(string say, ICueHandler handler, CueLook look)
         {
             if (handlers.TryGetValue(say, out var existing))
             {
@@ -43,6 +45,7 @@ namespace Yard.Cues
                 return;
             }
             handlers[say] = handler;
+            looks[say] = look;
         }
 
         public bool TryGet(string say, out ICueHandler handler)
@@ -50,6 +53,16 @@ namespace Yard.Cues
             handler = null;
             return say != null && handlers.TryGetValue(say, out handler);
         }
+
+        public CueLook LookOf(string say) => say != null && looks.TryGetValue(say, out var look) ? look : DefaultLook(say);
+
+        static CueLook LookFrom(CueLookAttribute attribute, string say) =>
+            attribute != null && ColorUtility.TryParseHtmlString(attribute.ColorHex, out var color)
+                ? new CueLook(color, attribute.Word)
+                : DefaultLook(say);
+
+        static CueLook DefaultLook(string say) =>
+            new CueLook(CueLook.Neutral, string.IsNullOrEmpty(say) ? "" : say.Replace('_', ' ').ToUpperInvariant());
 
         static bool References(Assembly assembly, string name)
         {

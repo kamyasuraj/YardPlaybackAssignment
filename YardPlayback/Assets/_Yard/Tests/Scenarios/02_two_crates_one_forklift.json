@@ -1,0 +1,32 @@
+{
+  "ticket": "scenario-02",
+  "expect": {
+    "about": "One forklift carries and sets down two crates in turn; both leave; each load is whatever patch.set says at that cue.",
+    "loads": [
+      { "cue": 2, "id": "fork-1", "load": 2 },
+      { "cue": 3, "id": "fork-1", "load": 0 },
+      { "cue": 5, "id": "fork-1", "load": 3 },
+      { "cue": 6, "id": "fork-1", "load": 0 }
+    ],
+    "gone": [ { "cue": 3, "id": "crate-a" }, { "cue": 6, "id": "crate-b" } ],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 0 },
+    { "id": "crate-a", "lane": "north", "load": 2 },
+    { "id": "crate-b", "lane": "north", "load": 3 }
+  ],
+  "cues": [
+    { "say": "clock", "minute": 1, "patch": {} },
+    { "say": "carry", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 2 }] } },
+    { "say": "setdown", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 0 }], "gone": ["crate-a"] } },
+    { "say": "clock", "minute": 2, "patch": {} },
+    { "say": "carry", "who": "fork-1", "what": "crate-b", "patch": { "set": [{ "id": "fork-1", "load": 3 }] } },
+    { "say": "setdown", "who": "fork-1", "what": "crate-b", "patch": { "set": [{ "id": "fork-1", "load": 0 }], "gone": ["crate-b"] } },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 0 }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "ticket": "scenario-04",
+  "expect": {
+    "about": "amount is only the flash's label: a tick with no patch leaves the load alone; ticks whose set disagrees with load +/- amount follow the set.",
+    "loads": [
+      { "cue": 2, "id": "fork-1", "load": 5 },
+      { "cue": 3, "id": "fork-2", "load": 9 },
+      { "cue": 4, "id": "fork-1", "load": 0 }
+    ],
+    "gone": [],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 5 },
+    { "id": "fork-2", "lane": "south", "load": 5 }
+  ],
+  "cues": [
+    { "say": "mark", "who": "fork-1", "flag": "late", "patch": {} },
+    { "say": "tick", "who": "fork-1", "flag": "late", "amount": 7, "patch": {} },
+    { "say": "tick", "who": "fork-2", "flag": "rush", "amount": 1, "patch": { "set": [{ "id": "fork-2", "load": 9 }] } },
+    { "say": "tick", "who": "fork-1", "flag": "late", "amount": 2, "patch": { "set": [{ "id": "fork-1", "load": 0 }] } },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 0 },
+    { "id": "fork-2", "lane": "south", "load": 9 }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "ticket": "scenario-08",
+  "expect": {
+    "about": "A patch that names markers not in the yard ('ghost' in set, 'nobody' in gone) is warned about and ignored; the rest of the patch still applies.",
+    "loads": [
+      { "cue": 1, "id": "fork-1", "load": 3 },
+      { "cue": 2, "id": "fork-1", "load": 3 }
+    ],
+    "gone": [],
+    "closingFromCues": true,
+    "warnings": 2
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 2 }
+  ],
+  "cues": [
+    { "say": "tick", "who": "fork-1", "flag": "check", "amount": 1, "patch": { "set": [{ "id": "ghost", "load": 9 }, { "id": "fork-1", "load": 3 }] } },
+    { "say": "clock", "minute": 1, "patch": { "gone": ["nobody"] } },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 3 }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "ticket": "scenario-09",
+  "expect": {
+    "about": "The cues end with fork-1 at 4, but closing says 3 and puts fork-2 in the north lane: the end is held to closing (the file wins), with one warning.",
+    "loads": [
+      { "cue": 1, "id": "fork-1", "load": 4 }
+    ],
+    "gone": [],
+    "closingFromCues": false,
+    "warnings": 1
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 1 },
+    { "id": "fork-2", "lane": "south", "load": 0 }
+  ],
+  "cues": [
+    { "say": "tick", "who": "fork-1", "flag": "x", "amount": 1, "patch": { "set": [{ "id": "fork-1", "load": 4 }] } },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 3 },
+    { "id": "fork-2", "lane": "north", "load": 0 }
+  ]
+}

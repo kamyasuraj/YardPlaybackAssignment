@@ -1,0 +1,28 @@
+{
+  "ticket": "scenario-11",
+  "expect": {
+    "about": "Only clock cues: the minute moves, no load changes, nobody leaves.",
+    "loads": [
+      { "cue": 4, "id": "fork-1", "load": 3 },
+      { "cue": 4, "id": "fork-2", "load": 4 }
+    ],
+    "gone": [],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 3 },
+    { "id": "fork-2", "lane": "south", "load": 4 }
+  ],
+  "cues": [
+    { "say": "clock", "minute": 1, "patch": {} },
+    { "say": "clock", "minute": 2, "patch": {} },
+    { "say": "clock", "minute": 3, "patch": {} },
+    { "say": "clock", "minute": 4, "patch": {} },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 3 },
+    { "id": "fork-2", "lane": "south", "load": 4 }
+  ]
+}

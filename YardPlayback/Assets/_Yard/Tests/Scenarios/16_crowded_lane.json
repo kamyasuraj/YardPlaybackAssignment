@@ -1,0 +1,33 @@
+{
+  "ticket": "scenario-16",
+  "expect": {
+    "about": "Five markers in one lane: all must be placed on the lane (none past its end), and the three crates that stay must still be there at the end.",
+    "loads": [
+      { "cue": 1, "id": "fork-1", "load": 1 },
+      { "cue": 2, "id": "fork-1", "load": 0 }
+    ],
+    "gone": [ { "cue": 2, "id": "crate-a" } ],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 0 },
+    { "id": "crate-a", "lane": "north", "load": 1 },
+    { "id": "crate-b", "lane": "north", "load": 1 },
+    { "id": "crate-c", "lane": "north", "load": 1 },
+    { "id": "crate-d", "lane": "north", "load": 1 },
+    { "id": "fork-2", "lane": "south", "load": 0 }
+  ],
+  "cues": [
+    { "say": "carry", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 1 }] } },
+    { "say": "setdown", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 0 }], "gone": ["crate-a"] } },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 0 },
+    { "id": "crate-b", "lane": "north", "load": 1 },
+    { "id": "crate-c", "lane": "north", "load": 1 },
+    { "id": "crate-d", "lane": "north", "load": 1 },
+    { "id": "fork-2", "lane": "south", "load": 0 }
+  ]
+}

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yard playback page</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1b1d22; --muted: #5d6370; --line: #d9dce2;
+    --accent: #c98a00; --button: #2a2d35; --button-ink: #ffffff; --code: #eef0f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171b; --panel: #1e2127; --ink: #e9ebef; --muted: #9aa1ad; --line: #343843;
+      --accent: #ffc627; --button: #3a3f4b; --button-ink: #ffffff; --code: #262a31;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  p { margin: 0 0 10px; }
+  .muted { color: var(--muted); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-top: 16px; }
+  code, textarea, .call { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  code { background: var(--code); padding: 1px 5px; border-radius: 4px; }
+  textarea { width: 100%; min-height: 220px; resize: vertical; background: var(--code); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 10px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  button { background: var(--button); color: var(--button-ink); border: 0; border-radius: 6px; padding: 9px 18px; font: 600 14px system-ui, sans-serif; cursor: pointer; }
+  button:hover { outline: 2px solid var(--accent); }
+  .call { margin-top: 10px; color: var(--muted); overflow-wrap: anywhere; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  .wrap { overflow-x: auto; }
+  #unity-canvas { display: none; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 6px; }
+  pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Yard playback page</h1>
+  <p class="muted" id="mode">Looking for a WebGL build in <code>Build/</code>…</p>
+
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+
+  <section>
+    <h2>Script</h2>
+    <textarea id="script" spellcheck="false" aria-label="Script JSON">{
+  "ticket": "shift-04",
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 3 },
+    { "id": "fork-2", "lane": "south", "load": 0 },
+    { "id": "crate-a", "lane": "north", "load": 1 }
+  ],
+  "cues": [
+    { "say": "clock", "minute": 1, "patch": {} },
+    { "say": "carry", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 6 }] } },
+    { "say": "slip", "who": "fork-2", "patch": {} },
+    { "say": "mark", "who": "fork-1", "flag": "late", "patch": {} },
+    { "say": "clock", "minute": 2, "patch": {} },
+    { "say": "tick", "who": "fork-1", "flag": "late", "amount": 2, "patch": { "set": [{ "id": "fork-1", "load": 5 }] } },
+    { "say": "setdown", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 2 }], "gone": ["crate-a"] } },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 2 },
+    { "id": "fork-2", "lane": "south", "load": 0 }
+  ]
+}</textarea>
+    <div class="controls">
+      <button id="load">Load</button>
+      <button id="start">Start</button>
+      <button id="pause">Pause</button>
+      <button id="resume">Resume</button>
+      <button id="speed">Speed 1×</button>
+      <button id="skip">Skip</button>
+    </div>
+    <div class="call" id="last-call">Last call: —</div>
+  </section>
+
+  <section>
+    <h2>Finished: who is left, and each load</h2>
+    <p class="muted" id="finished-note">Not finished yet.</p>
+    <div class="wrap">
+      <table id="finished" hidden>
+        <thead><tr><th>Marker</th><th>Lane</th><th>Load</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Page contract</h2>
+    <p>Every control calls one Unity object by name: <code>YardPlayer</code>, through
+      <code>unityInstance.SendMessage("YardPlayer", method, value)</code>. That object carries only these six methods.</p>
+    <div class="wrap">
+      <table>
+        <thead><tr><th>Control</th><th>Call</th><th>Value</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>Load</td><td><code>SendMessage("YardPlayer", "Load", script)</code></td><td>the whole script as <b>one string</b> (JSON text)</td><td>Places the <code>opening</code> markers, ready to play. A bad script is rejected (the reason shows in the scene) and the current one stays.</td></tr>
+          <tr><td>Start</td><td><code>SendMessage("YardPlayer", "Play")</code></td><td>none</td><td>Plays the cues in order from the opening.</td></tr>
+          <tr><td>Pause</td><td><code>SendMessage("YardPlayer", "Pause")</code></td><td>none</td><td>Freezes motion and the cue clock.</td></tr>
+          <tr><td>Resume</td><td><code>SendMessage("YardPlayer", "Resume")</code></td><td>none</td><td>Continues the same cue.</td></tr>
+          <tr><td>Speed</td><td><code>SendMessage("YardPlayer", "SetSpeed", n)</code></td><td>number, <code>1</code> or <code>2</code></td><td>1× or 2×. No cue is skipped or repeated. Other values are ignored.</td></tr>
+          <tr><td>Skip</td><td><code>SendMessage("YardPlayer", "Skip")</code></td><td>none</td><td>Snaps to <code>closing</code> at once. A second Skip stays there.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:12px">When playback finishes (played through, or by Skip), Unity dispatches a
+      <code>yard:finished</code> event on <code>window</code>. Its <code>event.detail</code> is the finished payload as a JSON string:
+      who is left, with each lane and load. It fires once per loaded script.</p>
+    <pre><code>window.addEventListener("yard:finished", e =&gt; {
+  const finished = JSON.parse(e.detail);
+  // {"ticket":"shift-04","left":[{"id":"fork-1","lane":"north","load":2},{"id":"fork-2","lane":"south","load":0}]}
+});</code></pre>
+  </section>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const OBJECT = "YardPlayer";                 // the Unity object every control calls
+  const BUILD = "Build/YardPlayback";          // a WebGL build's file prefix, if one is placed next to this page
+
+  const $ = id => document.getElementById(id);
+  let unity = null;
+  let speed = 1;
+
+  function call(method, value) {
+    const shown = value === undefined ? `("${OBJECT}", "${method}")`
+      : typeof value === "string" ? `("${OBJECT}", "${method}", <script, ${value.length} characters>)`
+      : `("${OBJECT}", "${method}", ${value})`;
+    $("last-call").textContent = (unity ? "Last call: SendMessage" : "Last call (no build loaded): SendMessage") + shown;
+    if (!unity) return;
+    if (value === undefined) unity.SendMessage(OBJECT, method);
+    else unity.SendMessage(OBJECT, method, value);
+  }
+
+  $("load").addEventListener("click", () => { showFinished(null); call("Load", $("script").value); });
+  $("start").addEventListener("click", () => call("Play"));
+  $("pause").addEventListener("click", () => call("Pause"));
+  $("resume").addEventListener("click", () => call("Resume"));
+  $("speed").addEventListener("click", () => {
+    speed = speed === 1 ? 2 : 1;
+    $("speed").textContent = `Speed ${speed}×`;
+    call("SetSpeed", speed);
+  });
+  $("skip").addEventListener("click", () => call("Skip"));
+
+  // Who is left and each load. Built with textContent only: nothing from the payload is run as markup.
+  function showFinished(json) {
+    const table = $("finished");
+    const body = table.querySelector("tbody");
+    body.replaceChildren();
+    if (json === null) { table.hidden = true; $("finished-note").textContent = "Not finished yet."; return; }
+    let finished;
+    try { finished = JSON.parse(json); } catch { finished = null; }
+    if (!finished || typeof finished !== "object") { $("finished-note").textContent = "The finished payload was not valid."; return; }
+    const left = Array.isArray(finished.left) ? finished.left.filter(m => m && typeof m === "object") : [];
+    for (const marker of left) {
+      const row = body.insertRow();
+      for (const value of [marker.id, marker.lane, marker.load]) row.insertCell().textContent = String(value);
+    }
+    $("finished-note").textContent = `Ticket ${String(finished.ticket ?? "")}: ${left.length} left.`;
+    table.hidden = false;
+  }
+  window.addEventListener("yard:finished", e => showFinished(String(e.detail)));
+
+  // Drives a WebGL build if one sits next to this page (served over http; browsers block it from file://).
+  const loader = document.createElement("script");
+  loader.src = BUILD + ".loader.js";
+  loader.onerror = () => {
+    $("mode").textContent = "No WebGL build next to this page. The controls show the exact call each one makes; " +
+      "the same six controls run inside Unity from the menu Yard › Page Controls.";
+  };
+  // A build made with compression off names its files .data / .framework.js / .wasm; one made with
+  // Gzip and decompression fallback adds .unityweb. Use whichever is there.
+  async function pick(file) {
+    for (const name of [file, file + ".unityweb"]) {
+      try { if ((await fetch(name, { method: "HEAD" })).ok) return name; } catch { /* try the next name */ }
+    }
+    return file;
+  }
+  loader.onload = async () => {
+    const canvas = $("unity-canvas");
+    canvas.style.display = "block";
+    const [dataUrl, frameworkUrl, codeUrl] = await Promise.all(
+      [BUILD + ".data", BUILD + ".framework.js", BUILD + ".wasm"].map(pick));
+    createUnityInstance(canvas, {
+      dataUrl, frameworkUrl, codeUrl,
+      companyName: "Yard", productName: "Yard playback", productVersion: "1.0",
+    }).then(instance => {
+      unity = instance;
+      $("mode").textContent = "Driving the WebGL build.";
+    }).catch(error => {
+      canvas.style.display = "none";
+      $("mode").textContent = "The WebGL build did not start: " + String(error);
+    });
+  };
+  document.body.appendChild(loader);
+})();
+</script>
+</body>
+</html>

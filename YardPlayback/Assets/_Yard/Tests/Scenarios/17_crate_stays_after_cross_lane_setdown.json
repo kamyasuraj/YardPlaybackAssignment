@@ -1,0 +1,26 @@
+{
+  "ticket": "scenario-17",
+  "expect": {
+    "about": "A north forklift carries a south crate and sets it down, and the crate stays: at the end each must rest in its own lane (fork-1 north, crate-a south).",
+    "loads": [
+      { "cue": 1, "id": "fork-1", "load": 4 },
+      { "cue": 2, "id": "fork-1", "load": 2 }
+    ],
+    "gone": [],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 2 },
+    { "id": "crate-a", "lane": "south", "load": 1 }
+  ],
+  "cues": [
+    { "say": "carry", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 4 }] } },
+    { "say": "setdown", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 2 }] } },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 2 },
+    { "id": "crate-a", "lane": "south", "load": 1 }
+  ]
+}

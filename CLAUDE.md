@@ -216,7 +216,11 @@ hygiene. **No security scope the brief does not need** (hard rule, §0).
 ## 6. Working agreement
 
 - **Plan before building.** TA produces the task breakdown; the owner greenlights
-  the start. (We are pre-start now.)
+  the start.
+- **Per-step flow:** TA explains the step and the plan → owner approves → TA builds
+  and self-checks → **hand over to SA (review) and ST (verify against the brief)** →
+  TA fixes findings → owner verifies in Unity → commit when the owner asks (the owner
+  pushes).
 - **Definition of Done** for any section = its items on the brief's **Checked**
   list pass, verified by ST, with evidence captured for **Send back**.
 - **Small, reviewable steps.** Keep scripts and scenes modular; prefer additive

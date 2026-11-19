@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Yard.Core;
@@ -13,7 +14,8 @@ namespace Yard.EditorTools
     /// <summary>
     /// Builds the Yard scene's content and the marker prefabs from Unity primitives: colour materials,
     /// the Forklift, Crate and Flag prefabs, the World (ground, lanes, signs, marker placeholders) and
-    /// the Screen (HUD and controls) under YardPlayer, with every reference wired.
+    /// the Screen (HUD and controls) under the player's root "Yard", with every reference wired; and the
+    /// page's object "YardPlayer" (YardPage only), which is what an outside page calls by name.
     /// Creates only what is missing: assets and scene objects that already exist are kept, so hand
     /// edits survive a re-run. Menu: Yard > Build Scene and Prefabs.
     /// </summary>
@@ -24,6 +26,8 @@ namespace Yard.EditorTools
         const string PrefabsFolder = Root + "/Prefabs";
         const string ScenePath = "Assets/Scenes/Yard.unity";
         const string ScriptPath = Root + "/Data/shift-04.json";
+        const string PageObjectName = ScriptParser.ReservedId;   // "YardPlayer": the object the page calls by name
+        const string PlayerObjectName = "Yard";
 
         const float LaneLength = 17f;
         const float LaneWidth = 3.2f;
@@ -46,6 +50,7 @@ namespace Yard.EditorTools
             ["LaneNorth"] = new Color(0.2f, 0.33f, 0.58f),
             ["LaneSouth"] = new Color(0.18f, 0.45f, 0.36f),
             ["Divider"] = new Color(0.85f, 0.85f, 0.8f),
+            ["Gate"] = new Color(0.95f, 0.78f, 0.18f),
         };
 
         [MenuItem("Yard/Build Scene and Prefabs")]
@@ -60,29 +65,53 @@ namespace Yard.EditorTools
                 scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             }
 
-            var player = FindRoot(scene, "YardPlayer");
-            if (player == null) return "not built: Yard.unity has no YardPlayer object.";
-            var yardPlayer = player.GetComponent<YardPlayer>();
-            if (yardPlayer == null) return "not built: YardPlayer has no YardPlayer component.";
+            var made = new List<string>();
+            var yardPlayer = FindPlayer(scene);
+            if (yardPlayer == null) return "not built: Yard.unity has no root object with a YardPlayer component.";
+            var player = yardPlayer.gameObject;
+            // The name YardPlayer belongs to the page's object (YardPage only); the player's root is "Yard".
+            if (player.name == PageObjectName)
+            {
+                player.name = PlayerObjectName;
+                made.Add($"player root renamed '{PlayerObjectName}'");
+            }
+            WirePage(scene, yardPlayer, made);
 
             var cam = FindCamera(scene);
             var facing = cam != null ? cam.transform.rotation : Quaternion.Euler(45f, 0f, 0f);
             var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             var script = LoadScript();
-            var made = new List<string>();
 
             var materials = Materials(made);
+            var fxMaterial = FxMaterial(made);
+            var rounded = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             var flag = FlagPrefab(materials, font, facing, made);
             var forklift = ForkliftPrefab(materials, font, facing, made);
             var crate = CratePrefab(materials, font, facing, made);
+            AddLabelBacking(PrefabsFolder + "/Forklift.prefab", rounded, made);
+            AddLabelBacking(PrefabsFolder + "/Crate.prefab", rounded, made);
+            RaiseFlashText(PrefabsFolder + "/Forklift.prefab", made);
+            RaiseFlashText(PrefabsFolder + "/Crate.prefab", made);
+            var disc = FxPrefab("Disc", PrimitiveType.Cylinder, new Vector3(1f, 0.005f, 1f), fxMaterial, made);
+            var streak = FxPrefab("Streak", PrimitiveType.Cube, new Vector3(1f, 0.004f, 1f), fxMaterial, made);
+            var chip = ChipPrefab(font, facing, rounded, made);
 
             var world = player.transform.Find("World");
             if (world == null) world = BuildWorld(player.transform, materials, font, facing, forklift, crate, script, made);
             var screen = player.transform.Find("Screen");
             if (screen == null) screen = BuildScreen(player.transform, yardPlayer, font, script, made);
+            ExitGates(world, materials, font, facing, made);
+            var fxRoot = world.Find("Fx");
+            if (fxRoot == null)
+            {
+                fxRoot = Empty(world, "Fx", Vector3.zero);
+                made.Add("World/Fx");
+            }
 
             WireView(player, world, forklift, crate, flag);
             WireHud(player, screen);
+            WireFx(player, disc, streak, chip, fxRoot);
+            WireDirector(player, cam);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -116,7 +145,136 @@ namespace Yard.EditorTools
             return result;
         }
 
+        // Transparent, alpha-blended and unlit: rings, halos, dust and skid marks fade in and out.
+        static Material FxMaterial(List<string> made)
+        {
+            EnsureFolder(MaterialsFolder);
+            string path = MaterialsFolder + "/Fx.mat";
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null) return existing;
+
+            var material = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "Fx" };
+            material.SetFloat("_Surface", 1f);
+            material.SetFloat("_Blend", 0f);
+            material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            material.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+            material.SetFloat("_DstBlendAlpha", (float)BlendMode.OneMinusSrcAlpha);
+            material.SetFloat("_ZWrite", 0f);
+            material.SetOverrideTag("RenderType", "Transparent");
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.renderQueue = (int)RenderQueue.Transparent;
+            material.SetColor("_BaseColor", Color.white);
+            AssetDatabase.CreateAsset(material, path);
+            made.Add("material Fx");
+            return material;
+        }
+
         // ---------- prefabs ----------
+
+        static Renderer FxPrefab(string name, PrimitiveType type, Vector3 scale, Material material, List<string> made)
+        {
+            string path = $"{PrefabsFolder}/{name}.prefab";
+            var existing = AssetDatabase.LoadAssetAtPath<Renderer>(path);
+            if (existing != null) return existing;
+
+            var go = GameObject.CreatePrimitive(type);
+            go.name = name;
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.transform.localScale = scale;
+            var renderer = go.GetComponent<Renderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            return SavePrefab<Renderer>(go, path, made);
+        }
+
+        static ActionChip ChipPrefab(Font font, Quaternion facing, Sprite rounded, List<string> made)
+        {
+            string path = PrefabsFolder + "/ActionChip.prefab";
+            var existing = AssetDatabase.LoadAssetAtPath<ActionChip>(path);
+            if (existing != null) return existing;
+
+            var root = new GameObject("ActionChip", typeof(RectTransform));
+            var rect = (RectTransform)root.transform;
+            rect.rotation = facing;
+            rect.localScale = Vector3.one * LabelScale;
+            rect.sizeDelta = new Vector2(400f, 140f);
+            root.AddComponent<Canvas>().renderMode = RenderMode.WorldSpace;
+            var group = root.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            root.AddComponent<FaceCamera>();
+
+            var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
+            content.SetParent(rect, false);
+            content.sizeDelta = new Vector2(320f, 100f);
+            var back = new GameObject("Back", typeof(RectTransform)).AddComponent<Image>();
+            back.transform.SetParent(content, false);
+            ((RectTransform)back.transform).sizeDelta = new Vector2(320f, 100f);
+            back.sprite = rounded;
+            back.type = Image.Type.Sliced;
+            back.color = Color.white;
+            back.raycastTarget = false;
+            var word = LabelText(content, "Word", "WORD", 60, YardHud.InkColor, Vector2.zero, FontStyle.Bold, font, outline: false);
+
+            var chip = root.AddComponent<ActionChip>();
+            Set(chip, "group", group);
+            Set(chip, "content", content);
+            Set(chip, "back", back);
+            Set(chip, "word", word);
+            return SavePrefab<ActionChip>(root, path, made);
+        }
+
+        // The tick's flash text goes above the action word (which sits just over the load number).
+        // Changed only if it is still where the builder first put it, so a hand-placed value is kept.
+        static void RaiseFlashText(string path, List<string> made)
+        {
+            const float original = 185f;
+            const float raised = 300f;
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null) return;
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                var flash = root.transform.Find("Label/Flash") as RectTransform;
+                if (flash == null || !Mathf.Approximately(flash.anchoredPosition.y, original)) return;
+                flash.anchoredPosition = new Vector2(flash.anchoredPosition.x, raised);
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                made.Add("flash text raised on " + Path.GetFileNameWithoutExtension(path));
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        // Adds a dark rounded backing behind a marker's load number, so it reads on any background.
+        // Edits the existing prefab in place, keeping every other change made to it.
+        static void AddLabelBacking(string path, Sprite rounded, List<string> made)
+        {
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null) return;
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
+            {
+                var label = root.transform.Find("Label");
+                if (label == null || label.Find("Backing") != null) return;
+                var backing = new GameObject("Backing", typeof(RectTransform));
+                backing.transform.SetParent(label, false);
+                backing.transform.SetAsFirstSibling();
+                ((RectTransform)backing.transform).sizeDelta = new Vector2(170f, 125f);
+                var image = backing.AddComponent<Image>();
+                image.sprite = rounded;
+                image.type = Image.Type.Sliced;
+                image.color = new Color(0.04f, 0.05f, 0.07f, 0.72f);
+                image.raycastTarget = false;
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                made.Add("load-number backing on " + Path.GetFileNameWithoutExtension(path));
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
 
         static FlagView FlagPrefab(Dictionary<string, Material> m, Font font, Quaternion facing, List<string> made)
         {
@@ -182,7 +340,7 @@ namespace Yard.EditorTools
             var label = LabelCanvas(root.transform, "Label", new Vector3(0f, labelHeight, 0f), facing, true);
             var load = LabelText(label, "Load", "0", 100, Color.white, Vector2.zero, FontStyle.Bold, font);
             var nameText = LabelText(label, "Name", name, 44, new Color(1f, 1f, 1f, 0.85f), new Vector2(0f, -75f), FontStyle.Normal, font);
-            var flash = LabelText(label, "Flash", "", 80, new Color(1f, 0.85f, 0.2f), new Vector2(0f, 185f), FontStyle.Bold, font);
+            var flash = LabelText(label, "Flash", "", 80, new Color(1f, 0.85f, 0.2f), new Vector2(0f, 300f), FontStyle.Bold, font);
             flash.enabled = false;
 
             var view = root.AddComponent<MarkerView>();
@@ -221,6 +379,24 @@ namespace Yard.EditorTools
             if (script != null) Placeholders(markers, forklift, crate, script);
             made.Add("World (ground, lanes, signs, marker placeholders)");
             return world;
+        }
+
+        // A gate at the far end of each lane, labelled EXIT: where a marker leaves the yard.
+        static void ExitGates(Transform world, Dictionary<string, Material> m, Font font, Quaternion facing, List<string> made)
+        {
+            foreach (var (lane, z) in new[] { ("north", NorthZ), ("south", SouthZ) })
+            {
+                string name = "Exit " + lane;
+                if (world.Find(name) != null) continue;
+                var gate = Empty(world, name, new Vector3(LaneLength * 0.5f - 0.3f, 0f, z));
+                float side = LaneWidth * 0.5f - 0.1f;
+                Part(PrimitiveType.Cube, gate, "Post L", new Vector3(0f, 0.8f, side), new Vector3(0.16f, 1.6f, 0.16f), m["Gate"]);
+                Part(PrimitiveType.Cube, gate, "Post R", new Vector3(0f, 0.8f, -side), new Vector3(0.16f, 1.6f, 0.16f), m["Gate"]);
+                Part(PrimitiveType.Cube, gate, "Bar", new Vector3(0f, 1.6f, 0f), new Vector3(0.16f, 0.16f, LaneWidth), m["Gate"]);
+                var label = LabelCanvas(gate, "Label", new Vector3(0f, 2.05f, 0f), facing, false);
+                LabelText(label, "Text", "EXIT", 64, new Color(1f, 0.92f, 0.6f), Vector2.zero, FontStyle.Bold, font);
+                made.Add(name + " gate");
+            }
         }
 
         static void Sign(Transform world, string text, float z, Color laneColor, Font font, Quaternion facing)
@@ -340,6 +516,40 @@ namespace Yard.EditorTools
             Set(view, "flagPrefab", flag);
         }
 
+        static void WireFx(GameObject player, Renderer disc, Renderer streak, ActionChip chip, Transform fxRoot)
+        {
+            var fx = GetOrAdd<FxLayer>(player);
+            Set(fx, "discPrefab", disc);
+            Set(fx, "streakPrefab", streak);
+            Set(fx, "chipPrefab", chip);
+            Set(fx, "fxRoot", fxRoot);
+        }
+
+        // The object the page calls by name: a root named YardPlayer with YardPage only and no children,
+        // so SendMessage("YardPlayer", …) reaches the six page controls and nothing else.
+        static void WirePage(Scene scene, YardPlayer yardPlayer, List<string> made)
+        {
+            var page = FindRoot(scene, PageObjectName);
+            if (page == null)
+            {
+                page = new GameObject(PageObjectName);
+                SceneManager.MoveGameObjectToScene(page, scene);
+                made.Add($"'{PageObjectName}' page object");
+            }
+            Set(GetOrAdd<YardPage>(page), "player", yardPlayer);
+            foreach (var component in page.GetComponents<Component>())
+                if (!(component is Transform) && !(component is YardPage))
+                    Debug.LogWarning($"[Yard] build: '{PageObjectName}' should carry only YardPage; it also has {component.GetType().Name}.");
+            if (page.transform.childCount > 0)
+                Debug.LogWarning($"[Yard] build: '{PageObjectName}' should have no children.");
+        }
+
+        static void WireDirector(GameObject player, Camera cam)
+        {
+            var director = GetOrAdd<CameraDirector>(player);
+            Set(director, "cam", cam);
+        }
+
         static void WireHud(GameObject player, Transform screen)
         {
             var hud = GetOrAdd<YardHud>(player);
@@ -400,7 +610,7 @@ namespace Yard.EditorTools
             return rect;
         }
 
-        static Text LabelText(RectTransform canvas, string name, string value, int size, Color color, Vector2 position, FontStyle style, Font font)
+        static Text LabelText(RectTransform canvas, string name, string value, int size, Color color, Vector2 position, FontStyle style, Font font, bool outline = true)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(canvas, false);
@@ -417,9 +627,12 @@ namespace Yard.EditorTools
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;
             text.raycastTarget = false;
-            var outline = go.AddComponent<Outline>();
-            outline.effectColor = new Color(0f, 0f, 0f, 0.85f);
-            outline.effectDistance = new Vector2(4f, -4f);
+            if (outline)
+            {
+                var edge = go.AddComponent<Outline>();
+                edge.effectColor = new Color(0f, 0f, 0f, 0.85f);
+                edge.effectDistance = new Vector2(4f, -4f);
+            }
             return text;
         }
 
@@ -514,6 +727,16 @@ namespace Yard.EditorTools
         {
             foreach (var root in scene.GetRootGameObjects())
                 if (root.name == name) return root;
+            return null;
+        }
+
+        static YardPlayer FindPlayer(Scene scene)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                var player = root.GetComponent<YardPlayer>();
+                if (player != null) return player;
+            }
             return null;
         }
 

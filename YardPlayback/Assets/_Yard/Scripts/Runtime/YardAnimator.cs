@@ -7,6 +7,9 @@ namespace Yard
     /// <summary>Plays cues in the scene: each cue goes to the handler registered for its <c>say</c>.</summary>
     public class YardAnimator : ICueAnimator
     {
+        /// <summary>Playback time between a cue's focus (ring, word, cue line) arriving and its motion starting, so the eye gets there first.</summary>
+        public const float LeadInSeconds = 0.25f;
+
         readonly CueRegistry registry;
         readonly CueContext ctx;
 
@@ -18,25 +21,32 @@ namespace Yard
 
         public void Reset(YardScript script, YardState state)
         {
+            ctx.Fx.Clear();
+            if (ctx.Director != null) ctx.Director.Snap();
             ctx.View.Rebuild(script, state);
             ctx.Hud.ResetFor(script);
         }
 
         public bool CanPlay(string say) => registry.TryGet(say, out _);
 
-        public IEnumerator Play(Cue cue) => registry.TryGet(cue.say, out var handler) ? handler.Play(ctx, cue) : null;
+        public IEnumerator Play(Cue cue) => registry.TryGet(cue.say, out var handler) ? LeadIn(handler.Play(ctx, cue)) : null;
 
         public IEnumerator AnimatePatch(Cue cue, PatchResult result, YardState state) => ctx.View.AnimatePatch(ctx, result, state);
+
+        public IEnumerator AnimateClosing(YardState state) => ctx.View.AnimateClosing(ctx, state);
 
         public void Snap(Cue cue)
         {
             if (registry.TryGet(cue.say, out var handler)) handler.Snap(ctx, cue);
         }
 
+        /// <summary>Skip cuts: every motion, ring, word, fade and camera move ends at once.</summary>
         public void HaltMotion()
         {
             ctx.View.HaltMotion();
-            ctx.Hud.PulseMinute(0f);
+            ctx.Hud.Halt();
+            ctx.Fx.Clear();
+            if (ctx.Director != null) ctx.Director.Snap();
         }
 
         public void SyncInstant(YardState state) => ctx.View.SyncInstant(state);
@@ -46,6 +56,15 @@ namespace Yard
         {
             if (registry.TryGet(cue.say, out var handler)) return $"{cue.say}  ·  {handler.Describe(cue)}";
             return string.IsNullOrEmpty(cue.who) ? cue.say : $"{cue.say}  ·  {cue.who}";
+        }
+
+        /// <summary>The cue type's colour and word.</summary>
+        public CueLook LookOf(Cue cue) => registry.LookOf(cue.say);
+
+        IEnumerator LeadIn(IEnumerator motion)
+        {
+            yield return ctx.Wait(LeadInSeconds);
+            yield return motion;
         }
     }
 }

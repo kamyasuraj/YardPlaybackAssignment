@@ -1,0 +1,19 @@
+{
+  "ticket": "scenario-10",
+  "expect": {
+    "about": "A script with no cues: Play finishes straight away on closing.",
+    "loads": [],
+    "gone": [],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 2 },
+    { "id": "fork-2", "lane": "south", "load": 1 }
+  ],
+  "cues": [],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 2 },
+    { "id": "fork-2", "lane": "south", "load": 1 }
+  ]
+}

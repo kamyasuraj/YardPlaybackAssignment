@@ -26,7 +26,13 @@ namespace Yard.Core
         /// <summary>Clear any motion in flight: offsets, flashes, pulses.</summary>
         void HaltMotion();
 
-        /// <summary>Make the view equal the state with no motion.</summary>
+        /// <summary>Make the view equal the state with no motion (Skip cuts).</summary>
         void SyncInstant(YardState state);
+
+        /// <summary>
+        /// Bring the view to the state with eased motion: used when the cues end somewhere other than
+        /// <c>closing</c> and the end is held to the file. Loads roll, markers change lane, leave or arrive.
+        /// </summary>
+        IEnumerator AnimateClosing(YardState state);
     }
 }

@@ -1,0 +1,35 @@
+{
+  "ticket": "shift-04",
+  "expect": {
+    "about": "The brief's own script: fork-1 shows 6 after carry and 5 after tick (set, not computed), crate-a leaves at setdown, the end matches closing.",
+    "loads": [
+      { "cue": 1, "id": "fork-1", "load": 3 },
+      { "cue": 2, "id": "fork-1", "load": 6 },
+      { "cue": 3, "id": "fork-2", "load": 0 },
+      { "cue": 6, "id": "fork-1", "load": 5 },
+      { "cue": 7, "id": "fork-1", "load": 2 }
+    ],
+    "gone": [ { "cue": 7, "id": "crate-a" } ],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 3 },
+    { "id": "fork-2", "lane": "south", "load": 0 },
+    { "id": "crate-a", "lane": "north", "load": 1 }
+  ],
+  "cues": [
+    { "say": "clock", "minute": 1, "patch": {} },
+    { "say": "carry", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 6 }] } },
+    { "say": "slip", "who": "fork-2", "patch": {} },
+    { "say": "mark", "who": "fork-1", "flag": "late", "patch": {} },
+    { "say": "clock", "minute": 2, "patch": {} },
+    { "say": "tick", "who": "fork-1", "flag": "late", "amount": 2, "patch": { "set": [{ "id": "fork-1", "load": 5 }] } },
+    { "say": "setdown", "who": "fork-1", "what": "crate-a", "patch": { "set": [{ "id": "fork-1", "load": 2 }], "gone": ["crate-a"] } },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 2 },
+    { "id": "fork-2", "lane": "south", "load": 0 }
+  ]
+}

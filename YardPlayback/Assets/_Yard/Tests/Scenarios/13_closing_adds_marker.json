@@ -1,0 +1,21 @@
+{
+  "ticket": "scenario-13",
+  "expect": {
+    "about": "closing names a marker no cue brought in (fork-9): closing decides who is present at the end, so it appears, with one warning.",
+    "loads": [],
+    "gone": [],
+    "closingFromCues": false,
+    "warnings": 1
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 1 }
+  ],
+  "cues": [
+    { "say": "clock", "minute": 1, "patch": {} },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 1 },
+    { "id": "fork-9", "lane": "south", "load": 5 }
+  ]
+}

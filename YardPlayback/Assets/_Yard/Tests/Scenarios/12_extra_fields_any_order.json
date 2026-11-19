@@ -1,0 +1,27 @@
+{
+  "closing": [
+    { "load": 2, "lane": "south", "id": "fork-1", "colour": "yellow" }
+  ],
+  "note": "keys in a different order and fields the player doesn't know are ignored",
+  "version": 2,
+  "cues": [
+    { "patch": { "set": [{ "load": 3, "id": "fork-1" }] }, "what": "crate-a", "who": "fork-1", "say": "carry", "comment": "pick it up" },
+    { "say": "setdown", "who": "fork-1", "what": "crate-a", "patch": { "gone": ["crate-a"], "set": [{ "id": "fork-1", "load": 2 }] }, "speed": 9 },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "opening": [
+    { "load": 2, "id": "fork-1", "lane": "south" },
+    { "lane": "south", "load": 1, "id": "crate-a", "weight": 40 }
+  ],
+  "expect": {
+    "about": "Same rules with keys in any order and extra unknown fields everywhere: they are ignored and the script plays normally.",
+    "loads": [
+      { "cue": 1, "id": "fork-1", "load": 3 },
+      { "cue": 2, "id": "fork-1", "load": 2 }
+    ],
+    "gone": [ { "cue": 2, "id": "crate-a" } ],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "ticket": "scenario-12"
+}

@@ -1,0 +1,28 @@
+{
+  "ticket": "scenario-06",
+  "expect": {
+    "about": "patch.gone can remove a forklift, not only a crate: after its setdown, fork-2 leaves the yard together with the crate.",
+    "loads": [
+      { "cue": 2, "id": "fork-2", "load": 2 },
+      { "cue": 4, "id": "fork-1", "load": 2 }
+    ],
+    "gone": [ { "cue": 3, "id": "crate-a" }, { "cue": 3, "id": "fork-2" } ],
+    "closingFromCues": true,
+    "warnings": 0
+  },
+  "opening": [
+    { "id": "fork-1", "lane": "north", "load": 2 },
+    { "id": "fork-2", "lane": "south", "load": 1 },
+    { "id": "crate-a", "lane": "south", "load": 1 }
+  ],
+  "cues": [
+    { "say": "clock", "minute": 1, "patch": {} },
+    { "say": "carry", "who": "fork-2", "what": "crate-a", "patch": { "set": [{ "id": "fork-2", "load": 2 }] } },
+    { "say": "setdown", "who": "fork-2", "what": "crate-a", "patch": { "set": [{ "id": "fork-2", "load": 1 }], "gone": ["crate-a", "fork-2"] } },
+    { "say": "slip", "who": "fork-1", "patch": {} },
+    { "say": "shift_over", "patch": {} }
+  ],
+  "closing": [
+    { "id": "fork-1", "lane": "north", "load": 2 }
+  ]
+}

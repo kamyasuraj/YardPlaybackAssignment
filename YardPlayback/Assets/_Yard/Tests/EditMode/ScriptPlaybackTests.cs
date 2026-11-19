@@ -231,6 +231,12 @@ namespace Yard.Tests
             public void HaltMotion() => Log.Add("halt");
 
             public void SyncInstant(YardState state) => Log.Add("sync");
+
+            public IEnumerator AnimateClosing(YardState state)
+            {
+                Log.Add("closing");
+                yield return null;
+            }
         }
     }
 }
