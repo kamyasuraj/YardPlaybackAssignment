@@ -7,8 +7,8 @@ Thumbs.db
 desktop.ini
 *.swp
 
-# WebGL build output (regenerated; force-add if you decide to ship it in the repo)
-/[Bb]uild/
+# WebGL: Build/ (the four files next to index.html) is committed so the page runs from GitHub Pages.
+# Builds/ is the local staging folder for a build and is not.
 /[Bb]uilds/
 
 # Logs

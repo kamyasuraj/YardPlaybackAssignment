@@ -10,7 +10,7 @@ See the brief at [`Requirements/Yard playback + Lab lighting.md`](Requirements/Y
 | **Editor version** | **Unity 6000.0.69f1** (Unity 6, LTS line) |
 | Revision | `5f8607f5118b` |
 | Render pipeline | Universal RP (URP) 17.0.4 |
-| Target platform | WebGL |
+| Target platform | WebGL (active build target) |
 
 Open the project folder [`YardPlayback/`](YardPlayback/) with **exactly this
 Editor version** (Unity 6000.0.69f1). Other 6000.0.x patch versions will usually
@@ -42,15 +42,34 @@ object by name: **`YardPlayer`**.
 | Speed | `SendMessage("YardPlayer", "SetSpeed", n)` | `1` or `2` |
 | Skip | `SendMessage("YardPlayer", "Skip")` | — |
 
+Speed is one control, a menu: pick 1× or 2× and that value is sent. It keeps no state, so
+it stays correct when the in-scene 1×/2× buttons are also used.
+
 **Finished:** Unity dispatches a `yard:finished` event on `window`. Its `event.detail` is a
 JSON string giving who is left and each load, e.g.
 `{"ticket":"shift-04","left":[{"id":"fork-1","lane":"north","load":2},{"id":"fork-2","lane":"south","load":0}]}`.
 
-No WebGL build is included (the brief says it is not required). Opened on its own,
-`index.html` names the contract, and each control shows the exact call it makes. If a WebGL
-build's files are placed in `Build/` next to it (`YardPlayback.loader.js` and the rest), the
-page loads and drives that build. It must then be served over http, for example with
-`python -m http.server` from the repo root, because browsers block a build opened from `file://`.
+### WebGL build
+
+The page drives a WebGL build of the Yard scene whose files sit in `Build/` next to it.
+
+- **Online (GitHub Pages):** <https://kamyasuraj.github.io/YardPlaybackAssignment/>.
+  The repo serves `index.html` and `Build/` as they are; the empty `.nojekyll` file stops
+  GitHub from processing them. To enable it: Settings → Pages → Deploy from a branch →
+  the default branch, folder `/ (root)`.
+- **Locally:** a WebGL build must be served over http, because browsers block it when it is
+  opened from `file://`. From the repo root, run `python -m http.server 8000`, then open
+  <http://localhost:8000/index.html>.
+- **Without the build:** opened directly, `index.html` shows a "No WebGL build" note. It
+  still names the contract, and each control shows the exact call it makes.
+
+To rebuild:
+1. Set the target to **WebGL**.
+2. In Player Settings, check **Gzip** compression with **Decompression Fallback** on, and
+   **Run In Background** on, so the yard keeps playing while the page's buttons have focus.
+3. Build only `Assets/Scenes/Yard.unity` to a staging folder named `YardPlayback`, so the
+   files are called `YardPlayback.*`.
+4. Copy just its `Build/` files into `Build/` here. Unity's own `index.html` is not used.
 
 ## Lab lighting (section 4)
 
@@ -64,6 +83,7 @@ page loads and drives that build. It must then be served over http, for example 
 LightAssignment/
 ├─ README.md          ← this file
 ├─ index.html         ← the page: six controls + the page contract
+├─ Build/             ← the WebGL build the page drives (4 files)
 ├─ YardPlayback/      ← the Unity project
 ├─ Docs/              ← recording, screenshots, lighting stats, write-ups
 └─ Requirements/      ← the assignment brief + lab package (inputs)

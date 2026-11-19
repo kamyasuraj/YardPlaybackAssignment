@@ -17,7 +17,7 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
   h1 { font-size: 22px; margin: 0 0 4px; }
   h2 { font-size: 16px; margin: 0 0 10px; }
   p { margin: 0 0 10px; }
@@ -29,6 +29,8 @@
   .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   button { background: var(--button); color: var(--button-ink); border: 0; border-radius: 6px; padding: 9px 18px; font: 600 14px system-ui, sans-serif; cursor: pointer; }
   button:hover { outline: 2px solid var(--accent); }
+  select { background: var(--button); color: var(--button-ink); border: 0; border-radius: 6px; padding: 9px 14px; font: 600 14px system-ui, sans-serif; cursor: pointer; }
+  select:hover { outline: 2px solid var(--accent); }
   .call { margin-top: 10px; color: var(--muted); overflow-wrap: anywhere; }
   table { width: 100%; border-collapse: collapse; }
   th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -74,7 +76,11 @@
       <button id="start">Start</button>
       <button id="pause">Pause</button>
       <button id="resume">Resume</button>
-      <button id="speed">Speed 1×</button>
+      <select id="speed" aria-label="Speed">
+        <option value="" selected disabled hidden>Speed</option>
+        <option value="1">1×</option>
+        <option value="2">2×</option>
+      </select>
       <button id="skip">Skip</button>
     </div>
     <div class="call" id="last-call">Last call: —</div>
@@ -103,7 +109,7 @@
           <tr><td>Start</td><td><code>SendMessage("YardPlayer", "Play")</code></td><td>none</td><td>Plays the cues in order from the opening.</td></tr>
           <tr><td>Pause</td><td><code>SendMessage("YardPlayer", "Pause")</code></td><td>none</td><td>Freezes motion and the cue clock.</td></tr>
           <tr><td>Resume</td><td><code>SendMessage("YardPlayer", "Resume")</code></td><td>none</td><td>Continues the same cue.</td></tr>
-          <tr><td>Speed</td><td><code>SendMessage("YardPlayer", "SetSpeed", n)</code></td><td>number, <code>1</code> or <code>2</code></td><td>1× or 2×. No cue is skipped or repeated. Other values are ignored.</td></tr>
+          <tr><td>Speed (pick 1× or 2×)</td><td><code>SendMessage("YardPlayer", "SetSpeed", n)</code></td><td>number, <code>1</code> or <code>2</code></td><td>1× or 2×. No cue is skipped or repeated. Other values are ignored.</td></tr>
           <tr><td>Skip</td><td><code>SendMessage("YardPlayer", "Skip")</code></td><td>none</td><td>Snaps to <code>closing</code> at once. A second Skip stays there.</td></tr>
         </tbody>
       </table>
@@ -126,7 +132,6 @@
 
   const $ = id => document.getElementById(id);
   let unity = null;
-  let speed = 1;
 
   function call(method, value) {
     const shown = value === undefined ? `("${OBJECT}", "${method}")`
@@ -142,10 +147,12 @@
   $("start").addEventListener("click", () => call("Play"));
   $("pause").addEventListener("click", () => call("Pause"));
   $("resume").addEventListener("click", () => call("Resume"));
-  $("speed").addEventListener("click", () => {
-    speed = speed === 1 ? 2 : 1;
-    $("speed").textContent = `Speed ${speed}×`;
-    call("SetSpeed", speed);
+  // Speed is one control: pick 1× or 2× and that value is sent. It keeps no state (it goes back to
+  // "Speed"), so it stays right when the in-scene 1×/2× buttons change the speed too.
+  $("speed").addEventListener("change", () => {
+    const value = Number($("speed").value);
+    $("speed").value = "";
+    if (value === 1 || value === 2) call("SetSpeed", value);
   });
   $("skip").addEventListener("click", () => call("Skip"));
 

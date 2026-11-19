@@ -15,9 +15,9 @@ namespace Yard.EditorTools
     {
         const string ObjectName = ScriptParser.ReservedId;   // "YardPlayer"
         const string DefaultScriptPath = "Assets/_Yard/Data/shift-04.json";
+        static readonly string[] SpeedChoices = { "Speed", "1×", "2×" };
 
         string script;
-        float speed = 1f;
         string lastCall = "—";
         string payload;
         Vector2 scroll;
@@ -48,24 +48,12 @@ namespace Yard.EditorTools
         {
             if (change != PlayModeStateChange.EnteredPlayMode) return;
             payload = null;
-            speed = 1f;
             lastCall = "—";
             Repaint();
         }
 
-        // Keeps the Speed label true to the player when the in-scene 1×/2× buttons change it.
-        void OnInspectorUpdate()
-        {
-            if (Application.isPlaying) Repaint();
-        }
-
         void OnGUI()
         {
-            if (Application.isPlaying)
-            {
-                var player = FindAnyObjectByType<YardPlayer>();
-                if (player != null && player.Playback != null) speed = player.Playback.Clock.Speed;
-            }
             EditorGUILayout.LabelField("Calls the object named", ObjectName, EditorStyles.boldLabel);
             if (!Application.isPlaying)
                 EditorGUILayout.HelpBox("Enter Play mode to use the controls.", MessageType.Info);
@@ -82,11 +70,11 @@ namespace Yard.EditorTools
                 if (GUILayout.Button("Start")) Send("Play");
                 if (GUILayout.Button("Pause")) Send("Pause");
                 if (GUILayout.Button("Resume")) Send("Resume");
-                if (GUILayout.Button($"Speed {speed:0}×"))
-                {
-                    speed = speed == 1f ? 2f : 1f;
-                    Send("SetSpeed", speed);
-                }
+                // One Speed control, as on the page: pick 1× or 2× and that value is sent. It keeps no state
+                // (it shows "Speed" again), so it never goes out of step with the in-scene 1×/2×.
+                int pick = EditorGUILayout.Popup(0, SpeedChoices, GUILayout.Width(80f));
+                if (pick == 1) Send("SetSpeed", 1f);
+                else if (pick == 2) Send("SetSpeed", 2f);
                 if (GUILayout.Button("Skip")) Send("Skip");
                 EditorGUILayout.EndHorizontal();
             }

@@ -30,6 +30,10 @@ namespace Yard
         void Awake()
         {
             if (playback != null) return;   // set up once, even if Awake is called again by name
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // In the browser the page's script box must take typing; the yard needs no keyboard.
+            WebGLInput.captureAllKeyboardInput = false;
+#endif
             view = GetComponent<YardView>();
             hud = GetComponent<YardHud>();
             fx = GetComponent<FxLayer>();
