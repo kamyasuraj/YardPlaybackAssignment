@@ -8,7 +8,7 @@ desktop.ini
 *.swp
 
 # WebGL: Build/ (the four files next to index.html) is committed so the page runs from GitHub Pages.
-# Builds/ is the local staging folder for a build and is not.
+# Stage a rebuild outside the repo; Builds/ stays ignored in case one is staged here by hand.
 /[Bb]uilds/
 
 # Logs
